@@ -1,6 +1,6 @@
 
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 
 const START_DRAW_EVENTS = ['mousedown', 'touchstart'];
 const DRAW_EVENTS = ['mousemove', 'touchmove'];
@@ -31,7 +31,8 @@ const getPosition = (event) => {
   }
 }
 
-const SketchCanvas = () => {
+const SketchCanvas = forwardRef((props, ref) => {
+
   const canvasRef = useRef(null);
   const [sketchBoundingBox, setSketchBoundingBox] = useState([0, 0, 0, 0]); // [x1, y1, x2, y2]
   const [isDrawing, setIsDrawing] = useState(false);
@@ -113,6 +114,18 @@ const SketchCanvas = () => {
     };
   }, [sketchBoundingBox, isDrawing, brushSize]);
 
+
+  const getCanvasData = () => {
+    // Perform canvas data retrieval
+    const canvasData = 'Your canvas data';
+    return canvasData;
+  };
+
+  // Expose the getCanvasData function to the parent component
+  useImperativeHandle(ref, () => ({
+    getCanvasData: getCanvasData
+  }));
+
   return (
     <canvas
       className='object-none w-full h-full'
@@ -123,6 +136,7 @@ const SketchCanvas = () => {
       height={CANVAS_SIZE}
     />
   );
-};
+});
+SketchCanvas.displayName = 'SketchCanvas'; // Add the display name
 
 export default SketchCanvas;
