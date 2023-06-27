@@ -2,6 +2,35 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+const START_DRAW_EVENTS = ['mousedown', 'touchstart'];
+const DRAW_EVENTS = ['mousemove', 'touchmove'];
+const STOP_DRAW_EVENTS = ['mouseup', 'mouseout', 'touchend'];
+
+// Ensure the canvas is at least as large as the screen
+const CANVAS_SIZE = Math.max(window.screen.width, window.screen.height);
+
+const addEventListeners = (item, events, fn) => {
+  for (let event of events) {
+    item.addEventListener(event, fn);
+  }
+}
+
+const removeEventListeners = (item, events, fn) => {
+  for (let event of events) {
+    item.removeEventListener(event, fn);
+  }
+}
+
+const getPosition = (event) => {
+  if (event.touches && event.touches[0]) {
+    // Account for "safe area" on iPhones (i.e., notch)
+    const diff = (event.target.offsetHeight - document.body.offsetHeight) / 2;
+    return [event.touches[0].clientX, event.touches[0].clientY - diff]
+  } else {
+    return [event.offsetX, event.offsetY];
+  }
+}
+
 const SketchCanvas = () => {
   const canvasRef = useRef(null);
   // const [context, setContext] = useState(null);
@@ -35,8 +64,8 @@ const SketchCanvas = () => {
     };
 
     const startDrawing = (event) => {
-      const { offsetX, offsetY } = event;
 
+      const [offsetX, offsetY] = getPosition(event);
       context.moveTo(offsetX + paddingLeft, offsetY + paddingTop);
       context.beginPath();
       setIsDrawing(true);
@@ -45,7 +74,7 @@ const SketchCanvas = () => {
     const draw = (event) => {
       if (!isDrawing) return;
 
-      const { offsetX, offsetY } = event;
+      const [offsetX, offsetY] = getPosition(event);
       context.lineTo(offsetX + paddingLeft, offsetY + paddingTop);
       context.stroke();
     };
@@ -57,17 +86,17 @@ const SketchCanvas = () => {
     handleResize();
 
     window.addEventListener('resize', handleResize);
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseout', stopDrawing);
+
+    addEventListeners(canvas, START_DRAW_EVENTS, startDrawing);
+    addEventListeners(canvas, DRAW_EVENTS, draw);
+    addEventListeners(canvas, STOP_DRAW_EVENTS, stopDrawing);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      canvas.removeEventListener('mousedown', startDrawing);
-      canvas.removeEventListener('mousemove', draw);
-      canvas.removeEventListener('mouseup', stopDrawing);
-      canvas.removeEventListener('mouseout', stopDrawing);
+
+      removeEventListeners(canvas, START_DRAW_EVENTS, startDrawing);
+      removeEventListeners(canvas, DRAW_EVENTS, draw);
+      removeEventListeners(canvas, STOP_DRAW_EVENTS, stopDrawing);
     };
   }, [isDrawing, brushSize]);
 
@@ -77,9 +106,8 @@ const SketchCanvas = () => {
       ref={canvasRef}
       style={{ border: '1px solid black' }}
 
-      // Ensures that the canvas is scaled to the device's pixel ratio
-      width={window.screen.width}
-      height={window.screen.height}
+      width={CANVAS_SIZE}
+      height={CANVAS_SIZE}
     />
   );
 };

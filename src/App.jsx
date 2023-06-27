@@ -1,7 +1,17 @@
+import { useEffect } from 'react';
 import './App.css'
 import SketchCanvas from './components/SketchCanvas'
 
 function App() {
+
+  useEffect(() => {
+    const preventDefault = (e) => e.preventDefault();
+    document.addEventListener('touchmove', preventDefault, { passive: false });
+    return () => {
+      document.removeEventListener('touchmove', preventDefault, { passive: false });
+    }
+  }, []);
+
   return (
     <>
       <h1 className="text-3xl font-bold underline">
