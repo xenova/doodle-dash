@@ -33,7 +33,7 @@ const getPosition = (event) => {
 
 const SketchCanvas = () => {
   const canvasRef = useRef(null);
-  // const [context, setContext] = useState(null);
+  const [sketchBoundingBox, setSketchBoundingBox] = useState([0, 0, 0, 0]); // [x1, y1, x2, y2]
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushSize, setBrushSize] = useState(8);
 
@@ -64,18 +64,31 @@ const SketchCanvas = () => {
     };
 
     const startDrawing = (event) => {
-      if(event.button !== 0) return; // Only draw on left click
+      if (event.button !== 0) return; // Only draw on left click
       const [offsetX, offsetY] = getPosition(event);
-      context.moveTo(offsetX + paddingLeft, offsetY + paddingTop);
+      const canvasX = offsetX + paddingLeft;
+      const canvasY = offsetY + paddingTop;
+      context.moveTo(canvasX, canvasY);
       context.beginPath();
       setIsDrawing(true);
+      setSketchBoundingBox([canvasX, canvasY, canvasX, canvasY]);
     };
 
     const draw = (event) => {
       if (!isDrawing) return;
 
       const [offsetX, offsetY] = getPosition(event);
-      context.lineTo(offsetX + paddingLeft, offsetY + paddingTop);
+      const canvasX = offsetX + paddingLeft;
+      const canvasY = offsetY + paddingTop;
+
+      setSketchBoundingBox([
+        Math.min(sketchBoundingBox[0], canvasX),
+        Math.min(sketchBoundingBox[1], canvasY),
+        Math.max(sketchBoundingBox[2], canvasX),
+        Math.max(sketchBoundingBox[3], canvasY),
+      ]);
+
+      context.lineTo(canvasX, canvasY);
       context.stroke();
     };
 
@@ -98,7 +111,7 @@ const SketchCanvas = () => {
       removeEventListeners(canvas, DRAW_EVENTS, draw);
       removeEventListeners(canvas, STOP_DRAW_EVENTS, stopDrawing);
     };
-  }, [isDrawing, brushSize]);
+  }, [sketchBoundingBox, isDrawing, brushSize]);
 
   return (
     <canvas
