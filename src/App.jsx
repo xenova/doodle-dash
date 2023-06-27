@@ -22,16 +22,26 @@ function App() {
     }
   };
 
+  const handleClearCanvas = () => {
+    if (canvasRef.current) {
+      canvasRef.current.clearCanvas();
+    }
+  };
+
   return (
     <>
       <h1 className="text-3xl font-bold underline">
         Hello world!
       </h1>
 
-      <div className="d-flex justify-center items-center text-center h-full w-full top-0 left-0 absolute">
+      <div className="h-full w-full top-0 left-0 absolute">
         <SketchCanvas ref={canvasRef} />
       </div>
-      <button onClick={handleGetCanvasData} className='absolute bottom-5 mx-auto'>Get Canvas Data</button>
+
+      <div className='flex absolute bottom-5 gap-2'>
+        <button onClick={handleGetCanvasData}>Get Canvas Data</button>
+        <button onClick={handleClearCanvas}>Clear Canvas</button>
+      </div>
     </>
   )
 }
