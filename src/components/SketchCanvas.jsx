@@ -64,7 +64,7 @@ const SketchCanvas = () => {
     };
 
     const startDrawing = (event) => {
-
+      if(event.button !== 0) return; // Only draw on left click
       const [offsetX, offsetY] = getPosition(event);
       context.moveTo(offsetX + paddingLeft, offsetY + paddingTop);
       context.beginPath();
