@@ -162,7 +162,7 @@ const SketchCanvas = forwardRef((props, ref) => {
     setSketchBoundingBox(null);
   };
 
-  // Expose the getCanvasData function to the parent component
+  // Expose the getCanvasData/clearCanvas functions to the parent component
   useImperativeHandle(ref, () => ({
     getCanvasData: getCanvasData,
     clearCanvas: clearCanvas,
