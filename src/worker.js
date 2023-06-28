@@ -87,7 +87,7 @@ const classify = async (
 
     // Actually run transcription
     let output = await classifier(image, {
-
+        topk: 0, // Return all classes
     }).catch((error) => {
         self.postMessage({
             status: "error",
