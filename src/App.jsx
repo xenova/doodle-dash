@@ -38,19 +38,21 @@ function App() {
 
     // Create a callback function for messages from the worker thread.
     const onMessageReceived = (e) => {
-      switch (e.data.status) {
+      const result = e.data;
+
+      switch (result.status) {
         case 'initiate':
           // Model file start load: add a new progress item to the list.
           setReady(false);
-          setProgressItems(prev => [...prev, e.data]);
+          setProgressItems(prev => [...prev, result]);
           break;
 
         case 'progress':
           // Model file progress: update one of the progress items.
           setProgressItems(
             prev => prev.map(item => {
-              if (item.file === e.data.file) {
-                return { ...item, progress: e.data.progress }
+              if (item.file === result.file) {
+                return { ...item, progress: result.progress }
               }
               return item;
             })
@@ -60,7 +62,7 @@ function App() {
         case 'done':
           // Model file loaded: remove the progress item from the list.
           setProgressItems(
-            prev => prev.filter(item => item.file !== e.data.file)
+            prev => prev.filter(item => item.file !== result.file)
           );
           break;
 
@@ -71,11 +73,12 @@ function App() {
 
         case 'update':
           // Generation update: update the output text.
-          setOutput(e.data.output);
           break;
 
         case 'complete':
+          console.log('complete', e)
           // Generation complete: re-enable the "Translate" button
+          setOutput(result.data);
           setDisabled(false);
           break;
       }
@@ -89,14 +92,13 @@ function App() {
   });
 
   const classify = () => {
-    console.log('classify', worker.current)
     if (worker.current && canvasRef.current) {
-        const image = canvasRef.current.getCanvasData();
-        if(image === null) {
-          console.warn('nothing to predict')
-        }else{
-          worker.current.postMessage({ image, model, quantized })
-        }
+      const image = canvasRef.current.getCanvasData();
+      if (image === null) {
+        console.warn('nothing to predict')
+      } else {
+        worker.current.postMessage({ image, model, quantized })
+      }
     }
   };
 
@@ -118,18 +120,20 @@ function App() {
 
   return (
     <>
-      <h1 className="text-3xl font-bold underline">
-        Hello world!
-      </h1>
-
       <div className="h-full w-full top-0 left-0 absolute">
         <SketchCanvas ref={canvasRef} />
       </div>
 
-      <div className='flex absolute bottom-5 gap-2'>
-        <button onClick={classify}>Classify</button>
-        <button onClick={handleGetCanvasData}>Get Canvas Data</button>
-        <button onClick={handleClearCanvas}>Clear Canvas</button>
+      <div className='absolute bottom-5 text-center'>
+        <h1 className="text-3xl font-bold mb-2">
+          {output && `Prediction: ${output[0].label} (${output[0].score}%)`}
+        </h1>
+
+        <div className='flex gap-2 justify-center'>
+          <button onClick={classify}>Classify</button>
+          <button onClick={handleGetCanvasData}>Get Canvas Data</button>
+          <button onClick={handleClearCanvas}>Clear Canvas</button>
+        </div>
       </div>
     </>
   )
