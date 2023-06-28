@@ -14,7 +14,6 @@ function App() {
   }, []);
 
   // Inputs and outputs
-  const [image, setImage] = useState('https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/tiger.jpg');
   const [model, setModel] = useState(constants.DEFAULT_MODEL);
   const [quantized, setQuantized] = useState(constants.DEFAULT_QUANTIZED);
 
@@ -91,8 +90,13 @@ function App() {
 
   const classify = () => {
     console.log('classify', worker.current)
-    if (worker.current) {
-      worker.current.postMessage({ image, model, quantized })
+    if (worker.current && canvasRef.current) {
+        const image = canvasRef.current.getCanvasData();
+        if(image === null) {
+          console.warn('nothing to predict')
+        }else{
+          worker.current.postMessage({ image, model, quantized })
+        }
     }
   };
 

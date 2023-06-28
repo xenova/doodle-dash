@@ -1,4 +1,4 @@
-import { pipeline, env } from "@xenova/transformers";
+import { pipeline, env, RawImage } from "@xenova/transformers";
 
 // Disable local models
 env.allowLocalModels = false;
@@ -31,10 +31,16 @@ class Singleton {
 
 self.addEventListener("message", async (event) => {
     const message = event.data;
-    console.log('received', message)
+
+    // Convert RGBA to grayscale, choose based on alpha channel
+    const data = new Uint8ClampedArray(message.image.data.length / 4);
+    for (let i = 0; i < data.length; ++i) {
+        data[i] = message.image.data[i * 4 + 3];
+    }
+    const img = new RawImage(data, message.image.width, message.image.height, 1);
 
     let result = await classify(
-        message.image,
+        img,
         message.model,
         message.quantized,
     );
@@ -81,7 +87,7 @@ const classify = async (
 
     // Actually run transcription
     let output = await classifier(image, {
-        
+
     }).catch((error) => {
         self.postMessage({
             status: "error",
