@@ -38,7 +38,7 @@ const SketchCanvas = forwardRef((props, ref) => {
   const canvasRef = useRef(null);
   const [sketchBoundingBox, setSketchBoundingBox] = useState(null); // [x1, y1, x2, y2]
   const [isDrawing, setIsDrawing] = useState(false);
-  const [brushSize, setBrushSize] = useState(8);
+  const [brushSize, setBrushSize] = useState(16);
 
 
   // const handleBrushSizeChange = (event) => {
@@ -74,6 +74,9 @@ const SketchCanvas = forwardRef((props, ref) => {
       const canvasY = offsetY + paddingTop;
       context.moveTo(canvasX, canvasY);
       context.beginPath();
+      context.lineTo(canvasX, canvasY);
+      context.stroke();
+
       setIsDrawing(true);
 
       if (sketchBoundingBox === null) {
@@ -172,7 +175,6 @@ const SketchCanvas = forwardRef((props, ref) => {
     <canvas
       className='object-none w-full h-full'
       ref={canvasRef}
-      style={{ border: '1px solid black' }}
 
       width={CANVAS_SIZE}
       height={CANVAS_SIZE}

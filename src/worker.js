@@ -32,6 +32,12 @@ class Singleton {
 self.addEventListener("message", async (event) => {
     const message = event.data;
 
+    if (message.action === 'load') {
+        await getModel(message.model, message.quantized);
+        self.postMessage({ status: "ready" });
+        return;
+    }
+
     // Convert RGBA to grayscale, choose based on alpha channel
     const data = new Uint8ClampedArray(message.image.data.length / 4);
     for (let i = 0; i < data.length; ++i) {
@@ -48,7 +54,7 @@ self.addEventListener("message", async (event) => {
 
     // Send the result back to the main thread
     self.postMessage({
-        status: "complete",
+        status: "result",
         task: "image-classification",
         data: result,
     });
@@ -60,11 +66,7 @@ class ImageClassificationPipelineSingleton extends Singleton {
     static quantized = null;
 }
 
-const classify = async (
-    image,
-    model,
-    quantized,
-) => {
+const getModel = async (model, quantized) => {
 
     const modelName = `Xenova/${model}`;
 
@@ -80,12 +82,22 @@ const classify = async (
         }
     }
 
-    // Load classifier model
-    let classifier = await p.getInstance((data) => {
-        self.postMessage(data);
-    });
 
-    // Actually run transcription
+    // Load classifier model
+    let classifier = await p.getInstance();
+
+    return classifier;
+}
+
+const classify = async (
+    image,
+    model,
+    quantized,
+) => {
+
+    let classifier = await getModel(model, quantized);
+
+    // Actually run classification
     let output = await classifier(image, {
         topk: 0, // Return all classes
     }).catch((error) => {
@@ -96,7 +108,6 @@ const classify = async (
         });
         return null;
     });
-    console.log('output', output)
 
     return output;
 };
