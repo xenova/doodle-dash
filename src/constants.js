@@ -6,8 +6,14 @@ export default {
         // - Too similar to other labels
         // - Too difficult to draw
         // - Too difficult to understand
-        'animal migration',
-        'stitches',
+        // - Ambiguous
+        "animal migration", // too difficult to understand
+        "arm", // too similar to "elbow"
+        "barn", // too similar to other types of buildings
+        "bat", // ambiguous (animal vs. sports equipment)
+        "circle", // when scaled down, always detected as an octogon
+        "hexagon", // too similar to octogon
+        "stitches", // too similar to lightning/zigzag
     ],
     TARGET_FPS: 60,
     GAME_DURATION: 1000 + 0.5, // + 0.5 so it doesn't flicker (TODO: change to 60)
