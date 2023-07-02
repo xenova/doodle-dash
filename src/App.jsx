@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import './App.css'
 import SketchCanvas from './components/SketchCanvas'
 import constants from './constants'
@@ -30,6 +30,17 @@ function App() {
 
   const [output, setOutput] = useState('');
 
+  const [countdown, setCountdown] = useState(3);
+
+  const [timer, setTimer] = useState(60);
+
+  // const [gameStartTime, setGameStartTime] = useState(null);
+  // const [gamePrevTime, setGamePrevTime] = useState(null);
+  // const [gameCurrentTime, setGameCurrentTime] = useState(null);
+  const [isPredicting, setIsPredicting] = useState(false);
+
+  const [sketchHasChanged, setSketchHasChanged] = useState(false);
+
   // Create a reference to the worker object.
   const worker = useRef(null);
 
@@ -60,15 +71,17 @@ function App() {
 
         case 'result':
           // TODO optimize:
-          const filteredResult = result.data.filter(x => !constants.BANNED_LABELS.includes(x.label));
 
-          // (item => (item.label !== 'animal migration'));
-          console.log('filteredResult', filteredResult)
-          // Generation complete: re-enable the "Translate" button
-          setOutput(filteredResult);
+          setIsPredicting(false);
+
+          {
+            const filteredResult = result.data.filter(x => !constants.BANNED_LABELS.includes(x.label));
+            console.log('filteredResult', filteredResult)
+            setOutput(filteredResult);
+          }
           setDisabled(false);
 
-          nextFrame();
+          // nextFrame();
           break;
       }
     };
@@ -80,19 +93,15 @@ function App() {
     return () => worker.current.removeEventListener('message', onMessageReceived);
   });
 
-  const classify = () => {
+  const classify = useCallback(() => {
     if (worker.current && canvasRef.current) {
       const image = canvasRef.current.getCanvasData();
-      if (image === null) {
-        console.warn('nothing to predict')
-        setTimeout(() => {
-          classify();
-        }, 100)
-      } else {
+      if (image !== null) {
+        setIsPredicting(true);
         worker.current.postMessage({ action: 'classify', image, model, quantized })
       }
     }
-  };
+  }, [model, quantized]);
 
   const canvasRef = useRef(null);
 
@@ -101,87 +110,25 @@ function App() {
   };
 
   const handleClearCanvas = () => {
-    // 
     if (canvasRef.current) {
       canvasRef.current.clearCanvas();
     }
   };
 
-  const [countdown, setCountdown] = useState(3);
-  const [gameStartTime, setGameStartTime] = useState(null);
-  const [gamePrevTime, setGamePrevTime] = useState(null);
-  const [gameCurrentTime, setGameCurrentTime] = useState(null);
-
-  // // DEBUGGING:
+  // start game loop timer on mount
   // useEffect(() => {
-  //   // let a = setTimeout(() => {
-  //   //   classify()
-  //   // }, 1000);
+  //   console.log('game lop')
+  //   const t = setInterval(() => {
+  //     console.log('game loop')
+  //   }, 1000 / 60);
+  //   return () => clearInterval(t)
+  // })
 
-  //   // return () => {
-  //   //   clearTimeout(a)
-  //   // }
-  //   let a = setInterval(() => {
-  //     classify()
-  //   }, 100);
-
-  //   return () => {
-  //     clearInterval(a)
+  // useEffect(() => {
+  //   if (countdown <= 0) {
+  //     startGame();
   //   }
-  // });
-  useEffect(() => {
-    if (gameState === 'countdown') {
-      const timer = setInterval(() => {
-        setCountdown((prevCount) => prevCount - 1);
-      }, 1000);
-
-      return () => {
-        clearInterval(timer);
-      };
-    }
-  }, [gameState]);
-
-  const nextFrame = () => {
-    console.log('next frame')
-
-    setGamePrevTime(gameCurrentTime);
-
-    setGameStartTime(performance.now());
-    setGameCurrentTime(performance.now());
-
-    classify();
-  };
-
-  const reset = () => {
-    setCountdown(3);
-    setGameState('menu');
-    setGameStartTime(null);
-    setGameCurrentTime(null);
-    setOutput('');
-  }
-  const startGame = () => {
-    console.log('start playing')
-    setGameState('playing');
-
-    nextFrame();
-
-    // Game loop:
-    // const gameLoop = () => {
-    //   // console.log('game loop')
-    //   setGameCurrentTime(performance.now());
-    //   // console.log('gameCurrentTime', gameCurrentTime)
-    //   // console.log('gameStartTime', gameStartTime)
-    //   // console.log('gameCurrentTime - gameStartTime', gameCurrentTime - gameStartTime)
-    //   // console.log('gameCurrentTime - gameStartTime > 1000', gameCurrentTime - gameStartTime > 1000)
-    // }
-    // setInterval(gameLoop, 1000 / 60);
-  };
-
-  useEffect(() => {
-    if (countdown <= 0) {
-      startGame();
-    }
-  }, [countdown]);
+  // }, [countdown]);
 
   const beginCountdown = () => {
     console.log('start game')
@@ -204,13 +151,65 @@ function App() {
 
   };
 
+  // Detect for start of game
+  useEffect(() => {
+    if (gameState === 'countdown' && countdown <= 0) {
+      setGameState('playing');
+    }
+  }, [gameState, countdown])
+
+  // useEffect(() => {
+  //   if (gameState === 'playing') {
+  //     startGame();
+  //   }
+  // }, [gameState, countdown])
+
+  // GAME LOOP:
+  useEffect(() => {
+    if (gameState === 'countdown') {
+      const timer = setInterval(() => {
+        setCountdown((prevCount) => prevCount - 1);
+      }, 1000);
+
+      return () => {
+        clearInterval(timer);
+      };
+    } else if (gameState === 'playing') {
+
+      // const startGameTime = performance.now();
+      // const timer = setInterval(() => {
+      //   classify();
+
+      // }, 100);
+      const timer = setInterval(() => {
+        !isPredicting && sketchHasChanged && classify();
+        setSketchHasChanged(false);
+        // setGameCurrentTime(performance.now());
+      }, 10);
+
+      return () => {
+        console.log('clear timer')
+        clearInterval(timer);
+      };
+    } else if (gameState === 'end') {
+      // reset game
+      setCountdown(3);
+      setGameState('menu');
+      // setGameStartTime(null);
+      // setGameCurrentTime(null);
+      setOutput('');
+    }
+  }, [gameState, classify, isPredicting, sketchHasChanged]);
+
   const menuVisible = gameState === 'menu' || gameState === 'loading';
   const countdownVisible = gameState === 'countdown';
   return (
     <>
 
       <div className="h-full w-full top-0 left-0 absolute">
-        <SketchCanvas ref={canvasRef} />
+        <SketchCanvas onSketchChange={() => {
+          setSketchHasChanged(true);
+        }} ref={canvasRef} />
       </div>
       <AnimatePresence
         initial={false}
@@ -231,7 +230,7 @@ function App() {
       </AnimatePresence>
 
       {gameState === 'playing' && (
-        <div> {(gameCurrentTime - gameStartTime).toFixed(0)} </div>
+        <div> {timer.toFixed(0)} </div>
       )}
 
 
