@@ -6,6 +6,14 @@ import Menu from './components/Menu';
 import Countdown from './components/Countdown';
 
 import { AnimatePresence } from 'framer-motion'
+
+const formatTime = (seconds) => {
+  seconds = Math.floor(seconds);
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+}
+
 function App() {
 
   useEffect(() => {
@@ -30,14 +38,15 @@ function App() {
 
   const [output, setOutput] = useState('');
 
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState(constants.COUNTDOWN_TIMER);
 
-  const [timer, setTimer] = useState(60);
+  const [gameCurrentTime, setGameCurrentTime] = useState(null);
 
-  // const [gameStartTime, setGameStartTime] = useState(null);
+  const [gameStartTime, setGameStartTime] = useState(null);
   // const [gamePrevTime, setGamePrevTime] = useState(null);
   // const [gameCurrentTime, setGameCurrentTime] = useState(null);
   const [isPredicting, setIsPredicting] = useState(false);
+  const [timeSpentDrawing, setTimeSpentDrawing] = useState(0);
 
   const [sketchHasChanged, setSketchHasChanged] = useState(false);
 
@@ -76,7 +85,7 @@ function App() {
 
           {
             const filteredResult = result.data.filter(x => !constants.BANNED_LABELS.includes(x.label));
-            console.log('filteredResult', filteredResult)
+            console.log('timespent', timeSpentDrawing)
             setOutput(filteredResult);
           }
           setDisabled(false);
@@ -154,9 +163,22 @@ function App() {
   // Detect for start of game
   useEffect(() => {
     if (gameState === 'countdown' && countdown <= 0) {
+      setGameStartTime(performance.now());
+      setTimeSpentDrawing(0);
       setGameState('playing');
     }
   }, [gameState, countdown])
+
+  // Detect for end of game
+  useEffect(() => {
+    if (gameState === 'playing' && gameCurrentTime !== null && gameStartTime !== null && (gameCurrentTime - gameStartTime) / 1000 > constants.GAME_DURATION) {
+      setGameStartTime(null);
+      setTimeSpentDrawing(0);
+      handleClearCanvas();
+      setGameState('end');
+    }
+  }, [gameState, gameStartTime, gameCurrentTime])
+
 
   // useEffect(() => {
   //   if (gameState === 'playing') {
@@ -167,12 +189,12 @@ function App() {
   // GAME LOOP:
   useEffect(() => {
     if (gameState === 'countdown') {
-      const timer = setInterval(() => {
+      const countdownTimer = setInterval(() => {
         setCountdown((prevCount) => prevCount - 1);
       }, 1000);
 
       return () => {
-        clearInterval(timer);
+        clearInterval(countdownTimer);
       };
     } else if (gameState === 'playing') {
 
@@ -181,19 +203,32 @@ function App() {
       //   classify();
 
       // }, 100);
-      const timer = setInterval(() => {
-        !isPredicting && sketchHasChanged && classify();
+
+      const refreshTime = 10;
+
+      const classifyTimer = setInterval(() => {
+        if (sketchHasChanged) {
+          !isPredicting && classify();
+          console.log('run')
+
+          setTimeSpentDrawing((prev) => prev + refreshTime)
+
+        }
         setSketchHasChanged(false);
-        // setGameCurrentTime(performance.now());
-      }, 10);
+
+        setGameCurrentTime(performance.now());
+      }, refreshTime);
+
+      // setTimer
+      // gameStartTime
+      // setGameStartTime
 
       return () => {
-        console.log('clear timer')
-        clearInterval(timer);
+        clearInterval(classifyTimer);
       };
     } else if (gameState === 'end') {
       // reset game
-      setCountdown(3);
+      setCountdown(constants.COUNTDOWN_TIMER);
       setGameState('menu');
       // setGameStartTime(null);
       // setGameCurrentTime(null);
@@ -229,8 +264,13 @@ function App() {
         )}
       </AnimatePresence>
 
-      {gameState === 'playing' && (
-        <div> {timer.toFixed(0)} </div>
+      {gameState === 'playing' && gameCurrentTime !== null && (
+
+        <div className='absolute top-5 text-center'>
+          <h3 className='text-2xl'>
+            {formatTime(constants.GAME_DURATION - (gameCurrentTime - gameStartTime) / 1000)}
+          </h3>
+        </div>
       )}
 
 
