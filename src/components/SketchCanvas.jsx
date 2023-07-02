@@ -86,16 +86,17 @@ const SketchCanvas = forwardRef(({
     };
 
     const startDrawing = (event) => {
-      if (event.button !== 0) return; // Only draw on left click
+      // if (event.button !== 0) return; // Only draw on left click
       const [offsetX, offsetY] = getPosition(event);
       const canvasX = offsetX + paddingLeft;
       const canvasY = offsetY + paddingTop;
       context.moveTo(canvasX, canvasY);
       context.beginPath();
       context.lineTo(canvasX, canvasY);
-      context.stroke();
 
-      onSketchChange();
+      // NOTE: Due to a bug with iOS, we just draw a dot on touchstart events
+      context.arc(canvasX, canvasY, 0.5, 0, 2 * Math.PI);
+      context.stroke();
 
       setIsDrawing(true);
 
@@ -108,6 +109,7 @@ const SketchCanvas = forwardRef(({
           Math.max(x[3], canvasY + brushRadius),
         ]
       );
+      onSketchChange();
     };
 
     const draw = throttle((event) => {
