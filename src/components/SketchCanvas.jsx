@@ -33,9 +33,12 @@ const getPosition = (event) => {
   }
 }
 
-const SketchCanvas = forwardRef((props, ref) => {
+const SketchCanvas = forwardRef(({
+  onSketchChange
+}, ref) => {
 
   const canvasRef = useRef(null);
+  const contextRef = useRef(null);
   const [sketchBoundingBox, setSketchBoundingBox] = useState(null); // [x1, y1, x2, y2]
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushSize, setBrushSize] = useState(16);
@@ -47,7 +50,13 @@ const SketchCanvas = forwardRef((props, ref) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+    if (!contextRef.current) {
+      // Set up the canvas context on initial render
+      // NOTE: We set `willReadFrequently` to true to improve performance.
+      contextRef.current = canvas.getContext('2d', { willReadFrequently: true });
+    }
+
+    const context = contextRef.current;
 
     // Setup the brush
     context.imageSmoothingEnabled = true;
@@ -76,12 +85,14 @@ const SketchCanvas = forwardRef((props, ref) => {
       context.beginPath();
       context.lineTo(canvasX, canvasY);
       context.stroke();
+      onSketchChange();
 
       setIsDrawing(true);
 
       if (sketchBoundingBox === null) {
         setSketchBoundingBox([canvasX, canvasY, canvasX, canvasY]);
       }
+
     };
 
     const draw = (event) => {
@@ -102,6 +113,7 @@ const SketchCanvas = forwardRef((props, ref) => {
 
       context.lineTo(canvasX, canvasY);
       context.stroke();
+      onSketchChange();
     };
 
     const stopDrawing = () => {
@@ -123,14 +135,13 @@ const SketchCanvas = forwardRef((props, ref) => {
       removeEventListeners(canvas, DRAW_EVENTS, draw);
       removeEventListeners(canvas, STOP_DRAW_EVENTS, stopDrawing);
     };
-  }, [sketchBoundingBox, isDrawing, brushSize]);
+  }, [sketchBoundingBox, isDrawing, brushSize, onSketchChange]);
 
 
   const getCanvasData = () => {
     if (sketchBoundingBox === null) return null;
 
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+    const context = contextRef.current;
 
     // Ensure sketch is square (and that aspect ratio is maintained)
     let left = sketchBoundingBox[0];
@@ -159,7 +170,7 @@ const SketchCanvas = forwardRef((props, ref) => {
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+    const context = contextRef.current;
     context.clearRect(0, 0, canvas.width, canvas.height);
 
     setSketchBoundingBox(null);
