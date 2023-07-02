@@ -7,6 +7,8 @@ const START_DRAW_EVENTS = ['mousedown', 'touchstart'];
 const DRAW_EVENTS = ['mousemove', 'touchmove'];
 const STOP_DRAW_EVENTS = ['mouseup', 'mouseout', 'touchend'];
 
+const THROTTLE_MS = 10; // number of milliseconds to throttle drawing by
+
 // Ensure the canvas is at least as large as the screen
 const CANVAS_SIZE = Math.max(window.screen.width, window.screen.height);
 
@@ -45,6 +47,9 @@ const SketchCanvas = forwardRef(({
   const [isDrawing, setIsDrawing] = useState(false);
   const [brushSize, setBrushSize] = useState(16);
 
+
+  const [timeSinceLastClear, setTimeSinceLastClear] = useState(0);
+  const [timeSpentDrawing, setTimeSpentDrawing] = useState(0);
 
   // const handleBrushSizeChange = (event) => {
   //   setBrushSize(parseInt(event.target.value, 10));
@@ -108,11 +113,11 @@ const SketchCanvas = forwardRef(({
     const draw = throttle((event) => {
       if (!isDrawing) return;
 
+      setTimeSpentDrawing(x => x + THROTTLE_MS)
+
       const [offsetX, offsetY] = getPosition(event);
       const canvasX = offsetX + paddingLeft;
       const canvasY = offsetY + paddingTop;
-
-
 
       setSketchBoundingBox(x => [
         Math.min(x[0], canvasX - brushRadius),
@@ -124,7 +129,7 @@ const SketchCanvas = forwardRef(({
       context.lineTo(canvasX, canvasY);
       context.stroke();
       onSketchChange();
-    }, 10);
+    }, THROTTLE_MS);
 
     const stopDrawing = () => {
       setIsDrawing(false);
@@ -178,18 +183,26 @@ const SketchCanvas = forwardRef(({
     return imgData;
   };
 
-  const clearCanvas = () => {
+  const clearCanvas = (resetTimeSpentDrawing = false) => {
     setSketchBoundingBox(null);
     const canvas = canvasRef.current;
     const context = contextRef.current;
     context.clearRect(0, 0, canvas.width, canvas.height);
     setIsDrawing(false);
+
+    if (resetTimeSpentDrawing) {
+      setTimeSpentDrawing(0);
+    }
   };
 
   // Expose the getCanvasData/clearCanvas functions to the parent component
   useImperativeHandle(ref, () => ({
     getCanvasData: getCanvasData,
     clearCanvas: clearCanvas,
+    getTimeSpentDrawing: () => {
+      console.log(timeSpentDrawing)
+      return timeSpentDrawing
+    },
   }));
 
   return (
