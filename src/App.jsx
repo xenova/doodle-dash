@@ -19,8 +19,6 @@ function App() {
   // Game state: menu, loading, start, playing, end
   const [gameState, setGameState] = useState('menu');
 
-
-
   // Inputs and outputs
   const [model, setModel] = useState(constants.DEFAULT_MODEL);
   const [quantized, setQuantized] = useState(constants.DEFAULT_QUANTIZED);
@@ -70,10 +68,7 @@ function App() {
           setOutput(filteredResult);
           setDisabled(false);
 
-          // classify again
-          // setTimeout(() => {
-          //   classify();
-          // }, 50)
+          nextFrame();
           break;
       }
     };
@@ -90,6 +85,9 @@ function App() {
       const image = canvasRef.current.getCanvasData();
       if (image === null) {
         console.warn('nothing to predict')
+        setTimeout(() => {
+          classify();
+        }, 100)
       } else {
         worker.current.postMessage({ action: 'classify', image, model, quantized })
       }
@@ -98,22 +96,21 @@ function App() {
 
   const canvasRef = useRef(null);
 
-  const handleGetCanvasData = () => {
-    if (canvasRef.current) {
-      const canvasData = canvasRef.current.getCanvasData();
-      // Do something with the canvas data
-      console.log(canvasData);
-    }
+  const handleEndGame = () => {
+    setGameState('menu');
   };
 
   const handleClearCanvas = () => {
-    setGameState('menu');
+    // 
     if (canvasRef.current) {
       canvasRef.current.clearCanvas();
     }
   };
 
   const [countdown, setCountdown] = useState(3);
+  const [gameStartTime, setGameStartTime] = useState(null);
+  const [gamePrevTime, setGamePrevTime] = useState(null);
+  const [gameCurrentTime, setGameCurrentTime] = useState(null);
 
   // // DEBUGGING:
   // useEffect(() => {
@@ -144,11 +141,45 @@ function App() {
     }
   }, [gameState]);
 
-  useEffect(() => {
-    if (countdown === 0) {
-      setGameState('playing');
+  const nextFrame = () => {
+    console.log('next frame')
 
-      console.log('Countdown completed!');
+    setGamePrevTime(gameCurrentTime);
+
+    setGameStartTime(performance.now());
+    setGameCurrentTime(performance.now());
+
+    classify();
+  };
+
+  const reset = () => {
+    setCountdown(3);
+    setGameState('menu');
+    setGameStartTime(null);
+    setGameCurrentTime(null);
+    setOutput('');
+  }
+  const startGame = () => {
+    console.log('start playing')
+    setGameState('playing');
+
+    nextFrame();
+
+    // Game loop:
+    // const gameLoop = () => {
+    //   // console.log('game loop')
+    //   setGameCurrentTime(performance.now());
+    //   // console.log('gameCurrentTime', gameCurrentTime)
+    //   // console.log('gameStartTime', gameStartTime)
+    //   // console.log('gameCurrentTime - gameStartTime', gameCurrentTime - gameStartTime)
+    //   // console.log('gameCurrentTime - gameStartTime > 1000', gameCurrentTime - gameStartTime > 1000)
+    // }
+    // setInterval(gameLoop, 1000 / 60);
+  };
+
+  useEffect(() => {
+    if (countdown <= 0) {
+      startGame();
     }
   }, [countdown]);
 
@@ -199,6 +230,10 @@ function App() {
         )}
       </AnimatePresence>
 
+      {gameState === 'playing' && (
+        <div> {(gameCurrentTime - gameStartTime).toFixed(0)} </div>
+      )}
+
 
       <div className='absolute bottom-5 text-center'>
 
@@ -207,21 +242,23 @@ function App() {
         </h1>
 
         <div className='flex gap-2 justify-center'>
-          <button onClick={classify}>Classify</button>
-          <button onClick={handleGetCanvasData}>Get Canvas Data</button>
+          <button onClick={handleEndGame}>End game</button>
           <button onClick={handleClearCanvas}>Clear Canvas</button>
         </div>
       </div>
 
-      <div className='absolute bottom-4'>
-        Made with{" "}
-        <a
-          className='underline'
-          href='https://github.com/xenova/transformers.js'
-        >
-          🤗 Transformers.js
-        </a>
-      </div>
+      {
+        menuVisible && (
+          <div className='absolute bottom-4'>
+            Made with{" "}
+            <a
+              className='underline'
+              href='https://github.com/xenova/transformers.js'
+            >
+              🤗 Transformers.js
+            </a>
+          </div>
+        )}
     </>
   )
 }
