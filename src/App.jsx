@@ -3,7 +3,9 @@ import './App.css'
 import SketchCanvas from './components/SketchCanvas'
 import constants from './constants'
 import Menu from './components/Menu';
+import Countdown from './components/Countdown';
 
+import { AnimatePresence } from 'framer-motion'
 function App() {
 
   useEffect(() => {
@@ -24,7 +26,7 @@ function App() {
   const [quantized, setQuantized] = useState(constants.DEFAULT_QUANTIZED);
 
   // Model loading
-  const [ready, setReady] = useState(null);
+  const [ready, setReady] = useState(false);
   const [disabled, setDisabled] = useState(false);
   const [progressItems, setProgressItems] = useState([]);
 
@@ -51,7 +53,7 @@ function App() {
         case 'ready':
           // Pipeline ready: the worker is ready to accept messages.
           setReady(true);
-          startGame();
+          beginCountdown();
           break;
 
         case 'update':
@@ -105,10 +107,13 @@ function App() {
   };
 
   const handleClearCanvas = () => {
+    setGameState('menu');
     if (canvasRef.current) {
       canvasRef.current.clearCanvas();
     }
   };
+
+  const [countdown, setCountdown] = useState(3);
 
   // // DEBUGGING:
   // useEffect(() => {
@@ -127,38 +132,78 @@ function App() {
   //     clearInterval(a)
   //   }
   // });
+  useEffect(() => {
+    if (gameState === 'countdown') {
+      const timer = setInterval(() => {
+        setCountdown((prevCount) => prevCount - 1);
+      }, 1000);
 
-  const startGame = () => {
+      return () => {
+        clearInterval(timer);
+      };
+    }
+  }, [gameState]);
+
+  useEffect(() => {
+    if (countdown === 0) {
+      setGameState('playing');
+
+      console.log('Countdown completed!');
+    }
+  }, [countdown]);
+
+  const beginCountdown = () => {
     console.log('start game')
-    setGameState('start');
-
-
-    // Start animation + countdown
-
-    setGameState('playing');
+    setGameState('countdown');
   }
+
   const handleMainClick = () => {
-    console.log('a')
+    console.log('a', ready)
 
     if (!ready) {
       setGameState('loading');
+      console.log('loading', ready)
+
       worker.current.postMessage({ action: 'load', model, quantized })
+      // setTimeout(() => {
+      // }, 5000)
     } else {
-      startGame();
+      beginCountdown();
     }
 
   };
+
+  const menuVisible = gameState === 'menu' || gameState === 'loading';
+  const countdownVisible = gameState === 'countdown';
   return (
     <>
+
       <div className="h-full w-full top-0 left-0 absolute">
         <SketchCanvas ref={canvasRef} />
       </div>
+      <AnimatePresence
+        initial={false}
+        mode='wait'
+      >
+        {menuVisible && (
+          <Menu gameState={gameState} onClick={handleMainClick} />
+        )}
+      </AnimatePresence>
 
-      <Menu gameState={gameState} onClick={handleMainClick} />
+      <AnimatePresence
+        initial={false}
+        mode='wait'
+      >
+        {countdownVisible && (
+          <Countdown countdown={countdown} />
+        )}
+      </AnimatePresence>
+
 
       <div className='absolute bottom-5 text-center'>
+
         <h1 className="text-2xl font-bold mb-2">
-          {output && `Prediction: ${output[0].label} (${output[0].score}%)`}
+          {output && `Prediction: ${output[0].label} (${(100 * output[0].score).toFixed(1)}%)`}
         </h1>
 
         <div className='flex gap-2 justify-center'>

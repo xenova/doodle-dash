@@ -17,6 +17,7 @@
   -webkit-text-size-adjust: 100%;
 
   background-color: #ffffff;
+  overflow: hidden;
 }
 
 a {
