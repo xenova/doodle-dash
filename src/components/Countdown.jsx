@@ -42,9 +42,9 @@ const Countdown = ({ countdown }) => {
             className='pointer-events-none absolute w-full h-full flex justify-center items-center'
         >
             <h1
-            style={{transform: 'translateY(-5%)'}}
+            style={{transform: 'translateY(-0.8rem)'}}
             
-            className='text-8xl'>{countdown > 0 ? countdown : 'Draw!'}</h1>
+            className='sm:text-8xl md:text-9xl text-6xl'>{countdown > 0 ? countdown : 'Draw!'}</h1>
 
         </motion.div>
     );
