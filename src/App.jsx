@@ -126,7 +126,7 @@ function App() {
 
   const canvasRef = useRef(null);
 
-  const handleEndGame = (cancelled=false) => {
+  const handleEndGame = (cancelled = false) => {
     // setGameState('menu');
     endGame();
   };
@@ -137,6 +137,13 @@ function App() {
     }
   };
 
+  const handleSkip = () => {
+    // console.log('skip')
+    goNext();
+    // if (canvasRef.current) {
+    //   canvasRef.current.clearCanvas(resetTimeSpentDrawing);
+    // }
+  };
   // start game loop timer on mount
   // useEffect(() => {
   //   console.log('game lop')
@@ -209,6 +216,23 @@ function App() {
     }
   }, [endGame, gameState, gameStartTime, gameCurrentTime])
 
+
+  const goNext = useCallback((isCorrect = false) => {
+    // take snapshot of canvas
+    const image = canvasRef.current.getCanvasData();
+
+    setPredictions(prev => [...prev, {
+      output: output?.[0] ?? null,
+      image: image,
+      correct: isCorrect,
+    }]);
+
+    setTargetIndex(prev => prev + 1);
+    setOutput(null);
+    setSketchHasChanged(false);
+    handleClearCanvas(true);
+  }, [output])
+
   // detect for correct and go onto next
   useEffect(() => {
     if (gameState === 'playing' && output !== null && targets !== null) {
@@ -217,23 +241,12 @@ function App() {
       if (targets[targetIndex] === output[0].label) {
         console.log('correct!')
 
-        // take snapshot of canvas
-        const image = canvasRef.current.getCanvasData();
-
-        setPredictions(prev => [...prev, {
-          output: output[0],
-          image: image,
-          correct: true,
-        }]);
 
         // Correct! Switch to next
-        setTargetIndex(prev => prev + 1);
-        setOutput(null);
-        setSketchHasChanged(false);
-        handleClearCanvas(true);
+        goNext(true);
       }
     }
-  }, [gameState, output, targets, targetIndex]);
+  }, [goNext, gameState, output, targets, targetIndex]);
 
 
 
@@ -344,8 +357,8 @@ function App() {
 
             <div className='flex gap-2 justify-center'>
               <button onClick={() => { handleClearCanvas() }}>Clear</button>
+              <button onClick={() => { handleSkip() }}>Skip</button>
               <button onClick={() => { handleEndGame(true) }}>Reset</button>
-              {/* <button onClick={() => { handleClearCanvas() }}>Skip</button> */}
             </div>
           </div>
         )}
