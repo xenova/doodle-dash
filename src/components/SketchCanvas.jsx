@@ -70,6 +70,8 @@ const SketchCanvas = forwardRef(({
     const paddingLeft = (canvas.width - window.innerWidth) / 2;
     const paddingTop = (canvas.height - window.innerHeight) / 2;
 
+    const brushRadius = brushSize / 2;
+
     const handleResize = () => {
       // NOTE: We adjust the style's width and height to avoid clearing the canvas data. 
       canvas.style.width = window.innerWidth;
@@ -87,14 +89,18 @@ const SketchCanvas = forwardRef(({
       context.stroke();
       onSketchChange();
 
+
       setIsDrawing(true);
 
-      setSketchBoundingBox(
-        x => x === null ? [canvasX, canvasY, canvasX, canvasY] : x);
-      // if (sketchBoundingBox === null) {
-        
-      // }
-
+      setSketchBoundingBox(x => x === null
+        ? [canvasX, canvasY, canvasX, canvasY]
+        : [
+          Math.min(x[0], canvasX - brushRadius),
+          Math.min(x[1], canvasY - brushRadius),
+          Math.max(x[2], canvasX + brushRadius),
+          Math.max(x[3], canvasY + brushRadius),
+        ]
+      );
     };
 
     const draw = (event) => {
@@ -104,15 +110,14 @@ const SketchCanvas = forwardRef(({
       const canvasX = offsetX + paddingLeft;
       const canvasY = offsetY + paddingTop;
 
-      const brushRadius = brushSize / 2;
 
-      setSketchBoundingBox(
-        x => [
-          Math.min(x[0], canvasX - brushRadius),
-          Math.min(x[1], canvasY - brushRadius),
-          Math.max(x[2], canvasX + brushRadius),
-          Math.max(x[3], canvasY + brushRadius),
-        ]);
+
+      setSketchBoundingBox(x => [
+        Math.min(x[0], canvasX - brushRadius),
+        Math.min(x[1], canvasY - brushRadius),
+        Math.max(x[2], canvasX + brushRadius),
+        Math.max(x[3], canvasY + brushRadius),
+      ]);
 
       context.lineTo(canvasX, canvasY);
       context.stroke();
@@ -172,12 +177,11 @@ const SketchCanvas = forwardRef(({
   };
 
   const clearCanvas = () => {
-    setIsDrawing(false);
+    setSketchBoundingBox(null);
     const canvas = canvasRef.current;
     const context = contextRef.current;
     context.clearRect(0, 0, canvas.width, canvas.height);
-
-    setSketchBoundingBox(null);
+    setIsDrawing(false);
   };
 
   // Expose the getCanvasData/clearCanvas functions to the parent component
