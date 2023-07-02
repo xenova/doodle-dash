@@ -89,9 +89,11 @@ const SketchCanvas = forwardRef(({
 
       setIsDrawing(true);
 
-      if (sketchBoundingBox === null) {
-        setSketchBoundingBox([canvasX, canvasY, canvasX, canvasY]);
-      }
+      setSketchBoundingBox(
+        x => x === null ? [canvasX, canvasY, canvasX, canvasY] : x);
+      // if (sketchBoundingBox === null) {
+        
+      // }
 
     };
 
@@ -104,12 +106,13 @@ const SketchCanvas = forwardRef(({
 
       const brushRadius = brushSize / 2;
 
-      setSketchBoundingBox([
-        Math.min(sketchBoundingBox[0], canvasX - brushRadius),
-        Math.min(sketchBoundingBox[1], canvasY - brushRadius),
-        Math.max(sketchBoundingBox[2], canvasX + brushRadius),
-        Math.max(sketchBoundingBox[3], canvasY + brushRadius),
-      ]);
+      setSketchBoundingBox(
+        x => [
+          Math.min(x[0], canvasX - brushRadius),
+          Math.min(x[1], canvasY - brushRadius),
+          Math.max(x[2], canvasX + brushRadius),
+          Math.max(x[3], canvasY + brushRadius),
+        ]);
 
       context.lineTo(canvasX, canvasY);
       context.stroke();
@@ -135,7 +138,7 @@ const SketchCanvas = forwardRef(({
       removeEventListeners(canvas, DRAW_EVENTS, draw);
       removeEventListeners(canvas, STOP_DRAW_EVENTS, stopDrawing);
     };
-  }, [sketchBoundingBox, isDrawing, brushSize, onSketchChange]);
+  }, [isDrawing, brushSize, onSketchChange]);
 
 
   const getCanvasData = () => {
@@ -169,6 +172,7 @@ const SketchCanvas = forwardRef(({
   };
 
   const clearCanvas = () => {
+    setIsDrawing(false);
     const canvas = canvasRef.current;
     const context = contextRef.current;
     context.clearRect(0, 0, canvas.width, canvas.height);
