@@ -1,6 +1,7 @@
 
 
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import { throttle } from '../utils.js';
 
 const START_DRAW_EVENTS = ['mousedown', 'touchstart'];
 const DRAW_EVENTS = ['mousemove', 'touchmove'];
@@ -32,6 +33,7 @@ const getPosition = (event) => {
     return [event.offsetX, event.offsetY];
   }
 }
+
 
 const SketchCanvas = forwardRef(({
   onSketchChange
@@ -87,8 +89,8 @@ const SketchCanvas = forwardRef(({
       context.beginPath();
       context.lineTo(canvasX, canvasY);
       context.stroke();
-      onSketchChange();
 
+      onSketchChange();
 
       setIsDrawing(true);
 
@@ -103,7 +105,7 @@ const SketchCanvas = forwardRef(({
       );
     };
 
-    const draw = (event) => {
+    const draw = throttle((event) => {
       if (!isDrawing) return;
 
       const [offsetX, offsetY] = getPosition(event);
@@ -122,7 +124,7 @@ const SketchCanvas = forwardRef(({
       context.lineTo(canvasX, canvasY);
       context.stroke();
       onSketchChange();
-    };
+    }, 10);
 
     const stopDrawing = () => {
       setIsDrawing(false);
