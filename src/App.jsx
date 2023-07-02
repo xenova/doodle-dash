@@ -14,6 +14,14 @@ const formatTime = (seconds) => {
   return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
 }
 
+// https://stackoverflow.com/a/12646864/13989043
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
 function App() {
 
   useEffect(() => {
@@ -36,7 +44,7 @@ function App() {
   const [disabled, setDisabled] = useState(false);
   const [progressItems, setProgressItems] = useState([]);
 
-  const [output, setOutput] = useState('');
+  const [output, setOutput] = useState(null);
 
   const [countdown, setCountdown] = useState(constants.COUNTDOWN_TIMER);
 
@@ -49,6 +57,11 @@ function App() {
   const [timeSpentDrawing, setTimeSpentDrawing] = useState(0);
 
   const [sketchHasChanged, setSketchHasChanged] = useState(false);
+
+  // What the user must sketch
+  const [targets, setTargets] = useState(null);
+  const [targetIndex, setTargetIndex] = useState(0);
+
 
   // Create a reference to the worker object.
   const worker = useRef(null);
@@ -140,20 +153,26 @@ function App() {
   // }, [countdown]);
 
   const beginCountdown = () => {
-    console.log('start game')
     setGameState('countdown');
+
+    // Choose the targets here and shuffle
+    const possibleLabels = Object.values(constants.LABELS)
+      .filter(x => !constants.BANNED_LABELS.includes(x));
+    shuffleArray(possibleLabels);
+
+    console.log('possibleLabels', possibleLabels);
+    setTargets(possibleLabels);
+    setTargetIndex(0);
   }
 
   const handleMainClick = () => {
-    console.log('a', ready)
 
     if (!ready) {
       setGameState('loading');
       console.log('loading', ready)
 
       worker.current.postMessage({ action: 'load', model, quantized })
-      // setTimeout(() => {
-      // }, 5000)
+
     } else {
       beginCountdown();
     }
@@ -169,15 +188,39 @@ function App() {
     }
   }, [gameState, countdown])
 
+  const reset = useCallback(() => {
+    setOutput(null);
+    setSketchHasChanged(false);
+    // 
+    // setGameStartTime(null);
+    setTimeSpentDrawing(0);
+    handleClearCanvas();
+  }, []);
+
   // Detect for end of game
   useEffect(() => {
     if (gameState === 'playing' && gameCurrentTime !== null && gameStartTime !== null && (gameCurrentTime - gameStartTime) / 1000 > constants.GAME_DURATION) {
       setGameStartTime(null);
-      setTimeSpentDrawing(0);
-      handleClearCanvas();
+      reset();
       setGameState('end');
     }
-  }, [gameState, gameStartTime, gameCurrentTime])
+  }, [reset, gameState, gameStartTime, gameCurrentTime])
+
+  // detect for correct and go onto next
+  useEffect(() => {
+    if (gameState === 'playing' && output !== null && targets !== null) {
+      // console.log(targets[targetIndex], output[0])
+
+      if (targets[targetIndex] === output[0].label) {
+        console.log('correct!')
+        // Correct! Switch to next
+        setTargetIndex(prev => prev + 1);
+        setOutput(null);
+        reset();
+      }
+    }
+  }, [gameState, output, targets, targetIndex, reset]);
+
 
 
   // useEffect(() => {
@@ -232,7 +275,7 @@ function App() {
       setGameState('menu');
       // setGameStartTime(null);
       // setGameCurrentTime(null);
-      setOutput('');
+      setOutput(null);
     }
   }, [gameState, classify, isPredicting, sketchHasChanged]);
 
@@ -264,9 +307,11 @@ function App() {
         )}
       </AnimatePresence>
 
-      {gameState === 'playing' && gameCurrentTime !== null && (
+      {((gameState === 'playing' && gameCurrentTime !== null && targets)) && (
 
         <div className='absolute top-5 text-center'>
+          <span>targetIndex {targetIndex}</span>
+          <h2 className='text-4xl'>Draw &quot;{targets[targetIndex]}&quot;</h2>
           <h3 className='text-2xl'>
             {formatTime(constants.GAME_DURATION - (gameCurrentTime - gameStartTime) / 1000)}
           </h3>
