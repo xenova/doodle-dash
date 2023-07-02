@@ -41,7 +41,6 @@ function App() {
 
   // Model loading
   const [ready, setReady] = useState(false);
-  const [disabled, setDisabled] = useState(false);
   const [progressItems, setProgressItems] = useState([]);
 
   const [output, setOutput] = useState(null);
@@ -54,13 +53,13 @@ function App() {
   // const [gamePrevTime, setGamePrevTime] = useState(null);
   // const [gameCurrentTime, setGameCurrentTime] = useState(null);
   const [isPredicting, setIsPredicting] = useState(false);
-  const [timeSpentDrawing, setTimeSpentDrawing] = useState(0);
 
   const [sketchHasChanged, setSketchHasChanged] = useState(false);
 
   // What the user must sketch
   const [targets, setTargets] = useState(null);
   const [targetIndex, setTargetIndex] = useState(0);
+  const [predictions, setPredictions] = useState([]);
 
 
   // Create a reference to the worker object.
@@ -98,11 +97,10 @@ function App() {
 
           {
             const filteredResult = result.data.filter(x => !constants.BANNED_LABELS.includes(x.label));
-            console.log('timespent', timeSpentDrawing)
+            const timespent = canvasRef.current.getTimeSpentDrawing();
+            console.log('timespent', timespent)
             setOutput(filteredResult);
           }
-          setDisabled(false);
-
           // nextFrame();
           break;
       }
@@ -110,6 +108,7 @@ function App() {
 
     // Attach the callback function as an event listener.
     worker.current.addEventListener('message', onMessageReceived);
+    // worker.current.addEventListener('error', alert);
 
     // Define a cleanup function for when the component is unmounted.
     return () => worker.current.removeEventListener('message', onMessageReceived);
@@ -127,13 +126,14 @@ function App() {
 
   const canvasRef = useRef(null);
 
-  const handleEndGame = () => {
-    setGameState('menu');
+  const handleEndGame = (cancelled=false) => {
+    // setGameState('menu');
+    endGame();
   };
 
-  const handleClearCanvas = () => {
+  const handleClearCanvas = (resetTimeSpentDrawing = false) => {
     if (canvasRef.current) {
-      canvasRef.current.clearCanvas();
+      canvasRef.current.clearCanvas(resetTimeSpentDrawing);
     }
   };
 
@@ -183,28 +183,31 @@ function App() {
   useEffect(() => {
     if (gameState === 'countdown' && countdown <= 0) {
       setGameStartTime(performance.now());
-      setTimeSpentDrawing(0);
       setGameState('playing');
     }
   }, [gameState, countdown])
 
-  const reset = useCallback(() => {
+  // const reset = useCallback(() => {
+  //   setOutput(null);
+  //   setSketchHasChanged(false);
+  //   // 
+  //   // setGameStartTime(null);
+  //   handleClearCanvas();
+  // }, []);
+
+  const endGame = useCallback(() => {
+    setGameStartTime(null);
     setOutput(null);
     setSketchHasChanged(false);
-    // 
-    // setGameStartTime(null);
-    setTimeSpentDrawing(0);
-    handleClearCanvas();
+    handleClearCanvas(true);
+    setGameState('end');
   }, []);
-
   // Detect for end of game
   useEffect(() => {
     if (gameState === 'playing' && gameCurrentTime !== null && gameStartTime !== null && (gameCurrentTime - gameStartTime) / 1000 > constants.GAME_DURATION) {
-      setGameStartTime(null);
-      reset();
-      setGameState('end');
+      endGame();
     }
-  }, [reset, gameState, gameStartTime, gameCurrentTime])
+  }, [endGame, gameState, gameStartTime, gameCurrentTime])
 
   // detect for correct and go onto next
   useEffect(() => {
@@ -213,13 +216,24 @@ function App() {
 
       if (targets[targetIndex] === output[0].label) {
         console.log('correct!')
+
+        // take snapshot of canvas
+        const image = canvasRef.current.getCanvasData();
+
+        setPredictions(prev => [...prev, {
+          output: output[0],
+          image: image,
+          correct: true,
+        }]);
+
         // Correct! Switch to next
         setTargetIndex(prev => prev + 1);
         setOutput(null);
-        reset();
+        setSketchHasChanged(false);
+        handleClearCanvas(true);
       }
     }
-  }, [gameState, output, targets, targetIndex, reset]);
+  }, [gameState, output, targets, targetIndex]);
 
 
 
@@ -241,12 +255,6 @@ function App() {
       };
     } else if (gameState === 'playing') {
 
-      // const startGameTime = performance.now();
-      // const timer = setInterval(() => {
-      //   classify();
-
-      // }, 100);
-
       const refreshTime = 10;
 
       const classifyTimer = setInterval(() => {
@@ -254,17 +262,12 @@ function App() {
           !isPredicting && classify();
           console.log('run')
 
-          setTimeSpentDrawing((prev) => prev + refreshTime)
-
+          // const timespent = canvasRef.current.getTimeSpentDrawing();
         }
         setSketchHasChanged(false);
 
         setGameCurrentTime(performance.now());
       }, refreshTime);
-
-      // setTimer
-      // gameStartTime
-      // setGameStartTime
 
       return () => {
         clearInterval(classifyTimer);
@@ -272,12 +275,12 @@ function App() {
     } else if (gameState === 'end') {
       // reset game
       setCountdown(constants.COUNTDOWN_TIMER);
-      setGameState('menu');
+      // setGameState('menu');
+      endGame();
       // setGameStartTime(null);
       // setGameCurrentTime(null);
-      setOutput(null);
     }
-  }, [gameState, classify, isPredicting, sketchHasChanged]);
+  }, [gameState, isPredicting, sketchHasChanged, classify, endGame]);
 
   const menuVisible = gameState === 'menu' || gameState === 'loading';
   const countdownVisible = gameState === 'countdown';
@@ -319,20 +322,10 @@ function App() {
       )}
 
 
-      <div className='absolute bottom-5 text-center'>
 
-        <h1 className="text-2xl font-bold mb-2">
-          {output && `Prediction: ${output[0].label} (${(100 * output[0].score).toFixed(1)}%)`}
-        </h1>
-
-        <div className='flex gap-2 justify-center'>
-          <button onClick={handleEndGame}>End game</button>
-          <button onClick={handleClearCanvas}>Clear Canvas</button>
-        </div>
-      </div>
 
       {
-        menuVisible && (
+        menuVisible ? (
           <div className='absolute bottom-4'>
             Made with{" "}
             <a
@@ -341,6 +334,19 @@ function App() {
             >
               🤗 Transformers.js
             </a>
+          </div>
+        ) : (
+          <div className='absolute bottom-5 text-center'>
+
+            <h1 className="text-2xl font-bold mb-2">
+              {output && `Prediction: ${output[0].label} (${(100 * output[0].score).toFixed(1)}%)`}
+            </h1>
+
+            <div className='flex gap-2 justify-center'>
+              <button onClick={() => { handleClearCanvas() }}>Clear</button>
+              <button onClick={() => { handleEndGame(true) }}>Reset</button>
+              {/* <button onClick={() => { handleClearCanvas() }}>Skip</button> */}
+            </div>
           </div>
         )}
     </>
