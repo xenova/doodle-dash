@@ -128,7 +128,7 @@ function App() {
 
   const handleEndGame = (cancelled = false) => {
     // setGameState('menu');
-    endGame();
+    endGame(cancelled);
   };
 
   const handleClearCanvas = (resetTimeSpentDrawing = false) => {
@@ -202,13 +202,16 @@ function App() {
   //   handleClearCanvas();
   // }, []);
 
-  const endGame = useCallback(() => {
+  const endGame = useCallback((cancelled = false) => {
+    // reset
     setGameStartTime(null);
     setOutput(null);
     setSketchHasChanged(false);
     handleClearCanvas(true);
-    setGameState('end');
+    setCountdown(constants.COUNTDOWN_TIMER);
+    setGameState(cancelled ? 'menu' : 'end');
   }, []);
+
   // Detect for end of game
   useEffect(() => {
     if (gameState === 'playing' && gameCurrentTime !== null && gameStartTime !== null && (gameCurrentTime - gameStartTime) / 1000 > constants.GAME_DURATION) {
@@ -286,10 +289,11 @@ function App() {
         clearInterval(classifyTimer);
       };
     } else if (gameState === 'end') {
+      // The game ended naturally (after timer expired)
+
       // reset game
-      setCountdown(constants.COUNTDOWN_TIMER);
       // setGameState('menu');
-      endGame();
+      // endGame();
       // setGameStartTime(null);
       // setGameCurrentTime(null);
     }
@@ -351,7 +355,7 @@ function App() {
         ) : (
           <div className='absolute bottom-5 text-center'>
 
-            <h1 className="text-2xl font-bold mb-2">
+            <h1 className="text-2xl font-bold mb-3">
               {output && `Prediction: ${output[0].label} (${(100 * output[0].score).toFixed(1)}%)`}
             </h1>
 
