@@ -18,6 +18,7 @@ export default {
         "circle", // when scaled down, always detected as an octogon
         "hexagon", // too similar to octogon
         "stitches", // too similar to lightning/zigzag
+        "sweather", // too similar to "jacket"
         "van", // too similar to other types of vehicles
     ],
     PREDICTION_REFRESH_TIME: 10,
