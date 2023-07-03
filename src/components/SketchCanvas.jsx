@@ -38,8 +38,10 @@ const getPosition = (event) => {
 
 
 const SketchCanvas = forwardRef(({
-  onSketchChange
+  onSketchChange, disabled
 }, ref) => {
+
+  // const [disabled, setDisabled] = useState(false);
 
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
@@ -86,6 +88,8 @@ const SketchCanvas = forwardRef(({
     };
 
     const startDrawing = (event) => {
+      if (disabled) return;
+
       // if (event.button !== 0) return; // Only draw on left click
       const [offsetX, offsetY] = getPosition(event);
       const canvasX = offsetX + paddingLeft;
@@ -113,7 +117,7 @@ const SketchCanvas = forwardRef(({
     };
 
     const draw = throttle((event) => {
-      if (!isDrawing) return;
+      if (!isDrawing || disabled) return;
 
       setTimeSpentDrawing(x => x + THROTTLE_MS)
 
@@ -121,7 +125,7 @@ const SketchCanvas = forwardRef(({
       const canvasX = offsetX + paddingLeft;
       const canvasY = offsetY + paddingTop;
 
-      setSketchBoundingBox(x => [
+      setSketchBoundingBox(x => x === null ? x : [
         Math.min(x[0], canvasX - brushRadius),
         Math.min(x[1], canvasY - brushRadius),
         Math.max(x[2], canvasX + brushRadius),
@@ -152,7 +156,7 @@ const SketchCanvas = forwardRef(({
       removeEventListeners(canvas, DRAW_EVENTS, draw);
       removeEventListeners(canvas, STOP_DRAW_EVENTS, stopDrawing);
     };
-  }, [isDrawing, brushSize, onSketchChange]);
+  }, [isDrawing, brushSize, onSketchChange, disabled]);
 
 
   const getCanvasData = () => {
