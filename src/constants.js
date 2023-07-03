@@ -16,8 +16,12 @@ export default {
         "stitches", // too similar to lightning/zigzag
     ],
     TARGET_FPS: 60,
-    GAME_DURATION: 10 + 0.5, // + 0.5 so it doesn't flicker (TODO: change to 60)
+    GAME_DURATION: 1000 + 0.5, // + 0.5 so it doesn't flicker (TODO: change to 60)
     COUNTDOWN_TIMER: 3,
+    
+    EASY_MODE_THRESHOLD: 0.2, // How confident the model should be before helping
+    EASY_MODE_DURATION: 120 * 1000, // How many ms to interpolate to correct answer (TODO: update)
+    EASY_MODE_DELAY: 3 * 1000, // How many ms to wait before helping
 
     LABELS: {
         "0": "aircraft carrier",

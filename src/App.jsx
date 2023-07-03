@@ -23,6 +23,10 @@ function shuffleArray(array) {
   }
 }
 
+function lerp(a, b, t) {
+  return a * (1 - t) + b * t;
+}
+
 function App() {
 
   // useEffect(() => {
@@ -99,7 +103,32 @@ function App() {
           {
             const filteredResult = result.data.filter(x => !constants.BANNED_LABELS.includes(x.label));
             const timespent = canvasRef.current.getTimeSpentDrawing();
-            console.log('timespent', timespent)
+
+            const applyEasyMode = timespent - constants.EASY_MODE_DELAY;
+            if (applyEasyMode > 0 && filteredResult[0].score > constants.EASY_MODE_THRESHOLD) {
+
+              const easyFactor = Math.min(1, applyEasyMode / constants.EASY_MODE_DURATION);
+
+              for (let i = 0; i < filteredResult.length; ++i) {
+                // adjust scores
+                if (filteredResult[i].label === targets[targetIndex]) {
+                  // linearly interpolate to 1
+                  filteredResult[i].score = lerp(filteredResult[i].score, 1, easyFactor);
+
+
+                  break; // small optimization to stop when we reach target since those after will be lower
+                } else {
+                  // linearly interpolate to 0
+                  const f = (1 - easyFactor) / (filteredResult.length - 1);
+                  filteredResult[i].score = lerp(filteredResult[i].score, 0, f);
+                }
+              }
+
+              // sort again
+              filteredResult.sort((a, b) => b.score - a.score);
+            }
+
+            // Apply "easy-mode" if the user is taking too long
             setOutput(filteredResult);
           }
           // nextFrame();
@@ -139,26 +168,8 @@ function App() {
   };
 
   const handleSkip = () => {
-    // console.log('skip')
     goNext();
-    // if (canvasRef.current) {
-    //   canvasRef.current.clearCanvas(resetTimeSpentDrawing);
-    // }
   };
-  // start game loop timer on mount
-  // useEffect(() => {
-  //   console.log('game lop')
-  //   const t = setInterval(() => {
-  //     console.log('game loop')
-  //   }, 1000 / 60);
-  //   return () => clearInterval(t)
-  // })
-
-  // useEffect(() => {
-  //   if (countdown <= 0) {
-  //     startGame();
-  //   }
-  // }, [countdown]);
 
   const beginCountdown = () => {
     setGameState('countdown');
@@ -177,7 +188,6 @@ function App() {
 
     if (!ready) {
       setGameState('loading');
-      console.log('loading', ready)
 
       worker.current.postMessage({ action: 'load', model, quantized })
 
@@ -261,9 +271,6 @@ function App() {
       // console.log(targets[targetIndex], output[0])
 
       if (targets[targetIndex] === output[0].label) {
-        console.log('correct!')
-
-
         // Correct! Switch to next
         goNext(true);
       }
@@ -295,7 +302,6 @@ function App() {
       const classifyTimer = setInterval(() => {
         if (sketchHasChanged) {
           !isPredicting && classify();
-          console.log('run')
 
           // const timespent = canvasRef.current.getTimeSpentDrawing();
         }
