@@ -1,3 +1,5 @@
+import constants from "./constants";
+
 import { pipeline, env, RawImage } from "@xenova/transformers";
 
 // Disable local models
@@ -33,7 +35,7 @@ self.addEventListener("message", async (event) => {
     const message = event.data;
 
     if (message.action === 'load') {
-        await getModel(message.model, message.quantized);
+        await ImageClassificationPipelineSingleton.getInstance();
         self.postMessage({ status: "ready" });
         return;
     }
@@ -45,11 +47,7 @@ self.addEventListener("message", async (event) => {
     }
     const img = new RawImage(data, message.image.width, message.image.height, 1);
 
-    let result = await classify(
-        img,
-        message.model,
-        message.quantized,
-    );
+    let result = await classify(img);
     if (result === null) return;
 
     // Send the result back to the main thread
@@ -62,40 +60,13 @@ self.addEventListener("message", async (event) => {
 
 class ImageClassificationPipelineSingleton extends Singleton {
     static task = "image-classification";
-    static model = null;
-    static quantized = null;
+    static model = `Xenova/${constants.DEFAULT_MODEL}`;
+    static quantized = constants.DEFAULT_QUANTIZED;
 }
 
-const getModel = async (model, quantized) => {
+const classify = async (image) => {
 
-    const modelName = `Xenova/${model}`;
-
-    const p = ImageClassificationPipelineSingleton;
-    if (p.model !== modelName || p.quantized !== quantized) {
-        // Invalidate model if different
-        p.model = modelName;
-        p.quantized = quantized;
-
-        if (p.instance !== null) {
-            (await p.getInstance()).dispose();
-            p.instance = null;
-        }
-    }
-
-
-    // Load classifier model
-    let classifier = await p.getInstance();
-
-    return classifier;
-}
-
-const classify = async (
-    image,
-    model,
-    quantized,
-) => {
-
-    let classifier = await getModel(model, quantized);
+    let classifier = await ImageClassificationPipelineSingleton.getInstance();
 
     // Actually run classification
     let output = await classifier(image, {
