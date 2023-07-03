@@ -3,6 +3,7 @@ import './App.css'
 import SketchCanvas from './components/SketchCanvas'
 import constants from './constants'
 import Menu from './components/Menu';
+import GameOver from './components/GameOver';
 import Countdown from './components/Countdown';
 
 import { AnimatePresence } from 'framer-motion'
@@ -24,13 +25,13 @@ function shuffleArray(array) {
 
 function App() {
 
-  useEffect(() => {
-    const preventDefault = (e) => e.preventDefault();
-    document.addEventListener('touchmove', preventDefault, { passive: false });
-    return () => {
-      document.removeEventListener('touchmove', preventDefault, { passive: false });
-    }
-  }, []);
+  // useEffect(() => {
+  //   const preventDefault = (e) => e.preventDefault();
+  //   document.addEventListener('touchmove', preventDefault, { passive: false });
+  //   return () => {
+  //     document.removeEventListener('touchmove', preventDefault, { passive: false });
+  //   }
+  // }, []);
 
   // Game state: menu, loading, start, playing, end
   const [gameState, setGameState] = useState('menu');
@@ -186,10 +187,19 @@ function App() {
 
   };
 
+  const handleGameOverClick = (playAgain) => {
+    if (playAgain) {
+      beginCountdown();
+    } else {
+      endGame(true);
+    }
+  };
+
   // Detect for start of game
   useEffect(() => {
     if (gameState === 'countdown' && countdown <= 0) {
       setGameStartTime(performance.now());
+      setPredictions([]);
       setGameState('playing');
     }
   }, [gameState, countdown])
@@ -228,13 +238,14 @@ function App() {
       output: output?.[0] ?? null,
       image: image,
       correct: isCorrect,
+      target: targets[targetIndex],
     }]);
 
     setTargetIndex(prev => prev + 1);
     setOutput(null);
     setSketchHasChanged(false);
     handleClearCanvas(true);
-  }, [output])
+  }, [output, targetIndex, targets])
 
   // detect for correct and go onto next
   useEffect(() => {
@@ -289,7 +300,18 @@ function App() {
         clearInterval(classifyTimer);
       };
     } else if (gameState === 'end') {
+      handleClearCanvas(true);
+      // TODO: SAVE LATEST PREDICTION
+
+
+      console.log('game ended')
+      console.log(predictions)
       // The game ended naturally (after timer expired)
+
+
+      // Show Game over text
+
+
 
       // reset game
       // setGameState('menu');
@@ -297,10 +319,12 @@ function App() {
       // setGameStartTime(null);
       // setGameCurrentTime(null);
     }
-  }, [gameState, isPredicting, sketchHasChanged, classify, endGame]);
+  }, [gameState, isPredicting, sketchHasChanged, classify, predictions]);
 
   const menuVisible = gameState === 'menu' || gameState === 'loading';
+  const isPlaying = gameState === 'playing';
   const countdownVisible = gameState === 'countdown';
+  const gameOver = gameState === 'end';
   return (
     <>
 
@@ -327,45 +351,52 @@ function App() {
         )}
       </AnimatePresence>
 
-      {((gameState === 'playing' && gameCurrentTime !== null && targets)) && (
+      <AnimatePresence
+        initial={false}
+        mode='wait'
+      >
+        {gameOver && (
+          <GameOver predictions={predictions} onClick={handleGameOverClick} />
+        )}
+      </AnimatePresence>
+
+      {((isPlaying && gameCurrentTime !== null && targets)) && (
 
         <div className='absolute top-5 text-center'>
           <span>targetIndex {targetIndex}</span>
           <h2 className='text-4xl'>Draw &quot;{targets[targetIndex]}&quot;</h2>
           <h3 className='text-2xl'>
-            {formatTime(constants.GAME_DURATION - (gameCurrentTime - gameStartTime) / 1000)}
+            {formatTime(Math.max(constants.GAME_DURATION - (gameCurrentTime - gameStartTime) / 1000, 0))}
           </h3>
         </div>
       )}
 
+      {menuVisible && (
+        <div className='absolute bottom-4'>
+          Made with{" "}
+          <a
+            className='underline'
+            href='https://github.com/xenova/transformers.js'
+          >
+            🤗 Transformers.js
+          </a>
+        </div>
+      )}
 
+      {isPlaying && (
+        <div className='absolute bottom-5 text-center'>
 
+          <h1 className="text-2xl font-bold mb-3">
+            {output && `Prediction: ${output[0].label} (${(100 * output[0].score).toFixed(1)}%)`}
+          </h1>
 
-      {
-        menuVisible ? (
-          <div className='absolute bottom-4'>
-            Made with{" "}
-            <a
-              className='underline'
-              href='https://github.com/xenova/transformers.js'
-            >
-              🤗 Transformers.js
-            </a>
+          <div className='flex gap-2 justify-center'>
+            <button onClick={() => { handleClearCanvas() }}>Clear</button>
+            <button onClick={() => { handleSkip() }}>Skip</button>
+            <button onClick={() => { handleEndGame(true) }}>Reset</button>
           </div>
-        ) : (
-          <div className='absolute bottom-5 text-center'>
-
-            <h1 className="text-2xl font-bold mb-3">
-              {output && `Prediction: ${output[0].label} (${(100 * output[0].score).toFixed(1)}%)`}
-            </h1>
-
-            <div className='flex gap-2 justify-center'>
-              <button onClick={() => { handleClearCanvas() }}>Clear</button>
-              <button onClick={() => { handleSkip() }}>Skip</button>
-              <button onClick={() => { handleEndGame(true) }}>Reset</button>
-            </div>
-          </div>
-        )}
+        </div>
+      )}
     </>
   )
 }
