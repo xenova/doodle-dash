@@ -68,7 +68,7 @@ const GameOver = ({ predictions, onClick }) => {
             </h2>
 
             <div
-                className='overflow-x-auto flex gap-4 px-8 p-4 rounded-lg shadow-[0_5px_25px_-5px_rgb(0,0,0,0.1),_0_8px_10px_-6px_rgb(0,0,0,0.1);]'
+                className='max-w-full overflow-x-auto flex gap-4 px-8 p-4 rounded-lg shadow-[0_5px_25px_-5px_rgb(0,0,0,0.1),_0_8px_10px_-6px_rgb(0,0,0,0.1);]'
             >
                 {predictions.map((p, i) => {
                     return (
