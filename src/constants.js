@@ -1,3 +1,7 @@
+import { mobileTabletCheck } from './utils.js'
+
+const IS_MOBILE = mobileTabletCheck();
+
 export default {
     DEFAULT_MODEL: "quickdraw-mobilevit-small",
     DEFAULT_QUANTIZED: false,
@@ -16,6 +20,8 @@ export default {
         "stitches", // too similar to lightning/zigzag
         "van", // too similar to other types of vehicles
     ],
+    PREDICTION_REFRESH_TIME: 10,
+    BRUSH_SIZE: IS_MOBILE ? 12 : 16,
     TARGET_FPS: 60,
     GAME_DURATION: 1000 + 0.5, // + 0.5 so it doesn't flicker (TODO: change to 60)
     COUNTDOWN_TIMER: 3,
