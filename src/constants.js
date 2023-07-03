@@ -14,14 +14,17 @@ export default {
         "circle", // when scaled down, always detected as an octogon
         "hexagon", // too similar to octogon
         "stitches", // too similar to lightning/zigzag
+        "van", // too similar to other types of vehicles
     ],
     TARGET_FPS: 60,
     GAME_DURATION: 1000 + 0.5, // + 0.5 so it doesn't flicker (TODO: change to 60)
     COUNTDOWN_TIMER: 3,
-    
+
     EASY_MODE_THRESHOLD: 0.2, // How confident the model should be before helping
     EASY_MODE_DURATION: 120 * 1000, // How many ms to interpolate to correct answer (TODO: update)
     EASY_MODE_DELAY: 3 * 1000, // How many ms to wait before helping
+
+    SKIP_PENALTY: 3 * 1000, // How much to penalize for skipping a drawing
 
     LABELS: {
         "0": "aircraft carrier",

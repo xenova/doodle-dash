@@ -40,10 +40,6 @@ function App() {
   // Game state: menu, loading, start, playing, end
   const [gameState, setGameState] = useState('menu');
 
-  // Inputs and outputs
-  const [model, setModel] = useState(constants.DEFAULT_MODEL);
-  const [quantized, setQuantized] = useState(constants.DEFAULT_QUANTIZED);
-
   // Model loading
   const [ready, setReady] = useState(false);
   const [progressItems, setProgressItems] = useState([]);
@@ -149,10 +145,10 @@ function App() {
       const image = canvasRef.current.getCanvasData();
       if (image !== null) {
         setIsPredicting(true);
-        worker.current.postMessage({ action: 'classify', image, model, quantized })
+        worker.current.postMessage({ action: 'classify', image })
       }
     }
-  }, [model, quantized]);
+  }, []);
 
   const canvasRef = useRef(null);
 
@@ -165,10 +161,6 @@ function App() {
     if (canvasRef.current) {
       canvasRef.current.clearCanvas(resetTimeSpentDrawing);
     }
-  };
-
-  const handleSkip = () => {
-    goNext();
   };
 
   const beginCountdown = () => {
@@ -189,7 +181,7 @@ function App() {
     if (!ready) {
       setGameState('loading');
 
-      worker.current.postMessage({ action: 'load', model, quantized })
+      worker.current.postMessage({ action: 'load' })
 
     } else {
       beginCountdown();
@@ -257,6 +249,12 @@ function App() {
 
 
   const goNext = useCallback((isCorrect = false) => {
+    if (!isCorrect) {
+      // apply skip penalty (done by pretending the game started earlier)
+      setGameStartTime(prev => {
+        return prev - constants.SKIP_PENALTY
+      });
+    }
     addPrediction(isCorrect);
 
     setTargetIndex(prev => prev + 1);
@@ -391,7 +389,7 @@ function App() {
 
           <div className='flex gap-2 justify-center'>
             <button onClick={() => { handleClearCanvas() }}>Clear</button>
-            <button onClick={() => { handleSkip() }}>Skip</button>
+            <button onClick={() => { goNext(false) }}>Skip</button>
             <button onClick={() => { handleEndGame(true) }}>Exit</button>
           </div>
         </div>
