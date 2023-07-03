@@ -205,10 +205,7 @@ const SketchCanvas = forwardRef(({
   useImperativeHandle(ref, () => ({
     getCanvasData: getCanvasData,
     clearCanvas: clearCanvas,
-    getTimeSpentDrawing: () => {
-      console.log(timeSpentDrawing)
-      return timeSpentDrawing
-    },
+    getTimeSpentDrawing: () => timeSpentDrawing,
   }));
 
   return (
