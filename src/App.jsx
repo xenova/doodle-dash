@@ -212,7 +212,23 @@ function App() {
   //   handleClearCanvas();
   // }, []);
 
+  const addPrediction = useCallback((isCorrect) => {
+    // take snapshot of canvas
+    const image = canvasRef.current.getCanvasData();
+
+    setPredictions(prev => [...prev, {
+      output: output?.[0] ?? null,
+      image: image,
+      correct: isCorrect,
+      target: targets[targetIndex],
+    }]);
+  }, [output, targetIndex, targets]);
+
   const endGame = useCallback((cancelled = false) => {
+    if (!cancelled) {
+      addPrediction(false);
+    }
+
     // reset
     setGameStartTime(null);
     setOutput(null);
@@ -220,7 +236,7 @@ function App() {
     handleClearCanvas(true);
     setCountdown(constants.COUNTDOWN_TIMER);
     setGameState(cancelled ? 'menu' : 'end');
-  }, []);
+  }, [addPrediction]);
 
   // Detect for end of game
   useEffect(() => {
@@ -231,21 +247,13 @@ function App() {
 
 
   const goNext = useCallback((isCorrect = false) => {
-    // take snapshot of canvas
-    const image = canvasRef.current.getCanvasData();
-
-    setPredictions(prev => [...prev, {
-      output: output?.[0] ?? null,
-      image: image,
-      correct: isCorrect,
-      target: targets[targetIndex],
-    }]);
+    addPrediction(isCorrect);
 
     setTargetIndex(prev => prev + 1);
     setOutput(null);
     setSketchHasChanged(false);
     handleClearCanvas(true);
-  }, [output, targetIndex, targets])
+  }, [addPrediction])
 
   // detect for correct and go onto next
   useEffect(() => {
@@ -300,26 +308,11 @@ function App() {
         clearInterval(classifyTimer);
       };
     } else if (gameState === 'end') {
-      handleClearCanvas(true);
-      // TODO: SAVE LATEST PREDICTION
-
-
-      console.log('game ended')
-      console.log(predictions)
       // The game ended naturally (after timer expired)
-
-
-      // Show Game over text
-
-
-
-      // reset game
-      // setGameState('menu');
-      // endGame();
-      // setGameStartTime(null);
-      // setGameCurrentTime(null);
+      // addPrediction(false); // assume failed
+      handleClearCanvas(true);
     }
-  }, [gameState, isPredicting, sketchHasChanged, classify, predictions]);
+  }, [gameState, isPredicting, sketchHasChanged, addPrediction, classify]);
 
   const menuVisible = gameState === 'menu' || gameState === 'loading';
   const isPlaying = gameState === 'playing';
