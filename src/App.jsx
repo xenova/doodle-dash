@@ -386,7 +386,7 @@ function App() {
           <div className='flex gap-2 justify-center'>
             <button onClick={() => { handleClearCanvas() }}>Clear</button>
             <button onClick={() => { handleSkip() }}>Skip</button>
-            <button onClick={() => { handleEndGame(true) }}>Reset</button>
+            <button onClick={() => { handleEndGame(true) }}>Exit</button>
           </div>
         </div>
       )}
