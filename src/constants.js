@@ -15,6 +15,7 @@ export default {
         "arm", // too similar to "elbow"
         "barn", // too similar to other types of buildings
         "bat", // ambiguous (animal vs. sports equipment)
+        "brain", // too difficult to draw
         "circle", // when scaled down, always detected as an octogon
         "hexagon", // too similar to octogon
         "stitches", // too similar to lightning/zigzag
@@ -24,7 +25,7 @@ export default {
     PREDICTION_REFRESH_TIME: 10,
     BRUSH_SIZE: IS_MOBILE ? 12 : 16,
     TARGET_FPS: 60,
-    GAME_DURATION: 1000 + 0.5, // + 0.5 so it doesn't flicker (TODO: change to 60)
+    GAME_DURATION: 60 + 0.5, // + 0.5 so it doesn't flicker (TODO: change to 60)
     COUNTDOWN_TIMER: 3,
 
     EASY_MODE_THRESHOLD: 0.2, // How confident the model should be before helping
