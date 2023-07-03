@@ -16,7 +16,7 @@ export default {
         "stitches", // too similar to lightning/zigzag
     ],
     TARGET_FPS: 60,
-    GAME_DURATION: 1000 + 0.5, // + 0.5 so it doesn't flicker (TODO: change to 60)
+    GAME_DURATION: 10 + 0.5, // + 0.5 so it doesn't flicker (TODO: change to 60)
     COUNTDOWN_TIMER: 3,
 
     LABELS: {
