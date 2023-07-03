@@ -58,17 +58,17 @@ const GameOver = ({ predictions, onClick }) => {
             className='absolute w-full h-full flex justify-center items-center flex-col px-8 text-center'
         >
             <h1
-                className='sm:text-7xl text-6xl mb-4 font-bold tracking-tight text-slate-900 text-center'>
+                className='sm:text-7xl text-6xl mb-3 font-bold tracking-tight text-slate-900 text-center'>
                 Game Over!
             </h1>
 
             <h2
-                className='mb-2 sm:text-2xl text-xl font-semibold text-slate-900'>
+                className='mb-4 sm:text-2xl text-xl font-semibold text-slate-900'>
                 Score: {predictions.filter(p => p.correct).length} / {predictions.length}
             </h2>
 
             <div
-                className='overflow-x-auto flex w-full gap-4 p-4 rounded-lg shadow-[0_5px_25px_-5px_rgb(0,0,0,0.1),_0_8px_10px_-6px_rgb(0,0,0,0.1);]'
+                className='overflow-x-auto flex gap-4 px-8 p-4 rounded-lg shadow-[0_5px_25px_-5px_rgb(0,0,0,0.1),_0_8px_10px_-6px_rgb(0,0,0,0.1);]'
             >
                 {predictions.map((p, i) => {
                     return (
@@ -86,7 +86,7 @@ const GameOver = ({ predictions, onClick }) => {
                 })}
             </div>
 
-            <div className='flex mt-6 gap-2'>
+            <div className='flex mt-6 gap-4'>
                 <button
                     onClick={() => onClick(true)}
                     type="button"
