@@ -171,7 +171,6 @@ function App() {
       .filter(x => !constants.BANNED_LABELS.includes(x));
     shuffleArray(possibleLabels);
 
-    console.log('possibleLabels', possibleLabels);
     setTargets(possibleLabels);
     setTargetIndex(0);
   }
@@ -360,7 +359,6 @@ function App() {
       {((isPlaying && gameCurrentTime !== null && targets)) && (
 
         <div className='absolute top-5 text-center'>
-          <span>targetIndex {targetIndex}</span>
           <h2 className='text-4xl'>Draw &quot;{targets[targetIndex]}&quot;</h2>
           <h3 className='text-2xl'>
             {formatTime(Math.max(constants.GAME_DURATION - (gameCurrentTime - gameStartTime) / 1000, 0))}
