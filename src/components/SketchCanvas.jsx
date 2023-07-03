@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { throttle } from '../utils.js';
 
+import constants from '../constants.js';
+
 const START_DRAW_EVENTS = ['mousedown', 'touchstart'];
 const DRAW_EVENTS = ['mousemove', 'touchmove'];
 const STOP_DRAW_EVENTS = ['mouseup', 'mouseout', 'touchend'];
@@ -47,15 +49,8 @@ const SketchCanvas = forwardRef(({
   const contextRef = useRef(null);
   const [sketchBoundingBox, setSketchBoundingBox] = useState(null); // [x1, y1, x2, y2]
   const [isDrawing, setIsDrawing] = useState(false);
-  const [brushSize, setBrushSize] = useState(16);
 
-
-  const [timeSinceLastClear, setTimeSinceLastClear] = useState(0);
   const [timeSpentDrawing, setTimeSpentDrawing] = useState(0);
-
-  // const handleBrushSizeChange = (event) => {
-  //   setBrushSize(parseInt(event.target.value, 10));
-  // };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -69,7 +64,7 @@ const SketchCanvas = forwardRef(({
 
     // Setup the brush
     context.imageSmoothingEnabled = true;
-    context.lineWidth = brushSize;
+    context.lineWidth = constants.BRUSH_SIZE;
     context.lineJoin = 'round';
     context.lineCap = 'round';
     context.strokeStyle = 'black';
@@ -79,7 +74,7 @@ const SketchCanvas = forwardRef(({
     const paddingLeft = (canvas.width - window.innerWidth) / 2;
     const paddingTop = (canvas.height - window.innerHeight) / 2;
 
-    const brushRadius = brushSize / 2;
+    const brushRadius = constants.BRUSH_SIZE / 2;
 
     const handleResize = () => {
       // NOTE: We adjust the style's width and height to avoid clearing the canvas data. 
@@ -156,7 +151,7 @@ const SketchCanvas = forwardRef(({
       removeEventListeners(canvas, DRAW_EVENTS, draw);
       removeEventListeners(canvas, STOP_DRAW_EVENTS, stopDrawing);
     };
-  }, [isDrawing, brushSize, onSketchChange, disabled]);
+  }, [isDrawing, onSketchChange, disabled]);
 
 
   const getCanvasData = () => {

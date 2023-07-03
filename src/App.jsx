@@ -29,39 +29,22 @@ function lerp(a, b, t) {
 
 function App() {
 
-  // useEffect(() => {
-  //   const preventDefault = (e) => e.preventDefault();
-  //   document.addEventListener('touchmove', preventDefault, { passive: false });
-  //   return () => {
-  //     document.removeEventListener('touchmove', preventDefault, { passive: false });
-  //   }
-  // }, []);
-
-  // Game state: menu, loading, start, playing, end
-  const [gameState, setGameState] = useState('menu');
-
   // Model loading
   const [ready, setReady] = useState(false);
-  const [progressItems, setProgressItems] = useState([]);
 
-  const [output, setOutput] = useState(null);
-
+  // Game state
+  const [gameState, setGameState] = useState('menu');
   const [countdown, setCountdown] = useState(constants.COUNTDOWN_TIMER);
-
   const [gameCurrentTime, setGameCurrentTime] = useState(null);
-
   const [gameStartTime, setGameStartTime] = useState(null);
-  // const [gamePrevTime, setGamePrevTime] = useState(null);
-  // const [gameCurrentTime, setGameCurrentTime] = useState(null);
+  const [output, setOutput] = useState(null);
   const [isPredicting, setIsPredicting] = useState(false);
-
   const [sketchHasChanged, setSketchHasChanged] = useState(false);
 
   // What the user must sketch
   const [targets, setTargets] = useState(null);
   const [targetIndex, setTargetIndex] = useState(0);
   const [predictions, setPredictions] = useState([]);
-
 
   // Create a reference to the worker object.
   const worker = useRef(null);
@@ -140,6 +123,7 @@ function App() {
     return () => worker.current.removeEventListener('message', onMessageReceived);
   });
 
+  // Set up classify function
   const classify = useCallback(() => {
     if (worker.current && canvasRef.current) {
       const image = canvasRef.current.getCanvasData();
@@ -153,7 +137,6 @@ function App() {
   const canvasRef = useRef(null);
 
   const handleEndGame = (cancelled = false) => {
-    // setGameState('menu');
     endGame(cancelled);
   };
 
@@ -176,16 +159,12 @@ function App() {
   }
 
   const handleMainClick = () => {
-
     if (!ready) {
       setGameState('loading');
-
       worker.current.postMessage({ action: 'load' })
-
     } else {
       beginCountdown();
     }
-
   };
 
   const handleGameOverClick = (playAgain) => {
@@ -204,14 +183,6 @@ function App() {
       setGameState('playing');
     }
   }, [gameState, countdown])
-
-  // const reset = useCallback(() => {
-  //   setOutput(null);
-  //   setSketchHasChanged(false);
-  //   // 
-  //   // setGameStartTime(null);
-  //   handleClearCanvas();
-  // }, []);
 
   const addPrediction = useCallback((isCorrect) => {
     // take snapshot of canvas
@@ -274,14 +245,6 @@ function App() {
     }
   }, [goNext, gameState, output, targets, targetIndex]);
 
-
-
-  // useEffect(() => {
-  //   if (gameState === 'playing') {
-  //     startGame();
-  //   }
-  // }, [gameState, countdown])
-
   // GAME LOOP:
   useEffect(() => {
     if (gameState === 'countdown') {
@@ -294,29 +257,33 @@ function App() {
       };
     } else if (gameState === 'playing') {
 
-      const refreshTime = 10;
-
       const classifyTimer = setInterval(() => {
         if (sketchHasChanged) {
           !isPredicting && classify();
-
-          // const timespent = canvasRef.current.getTimeSpentDrawing();
         }
         setSketchHasChanged(false);
 
         setGameCurrentTime(performance.now());
-      }, refreshTime);
+      }, constants.PREDICTION_REFRESH_TIME);
 
       return () => {
         clearInterval(classifyTimer);
       };
     } else if (gameState === 'end') {
       // The game ended naturally (after timer expired)
-      // addPrediction(false); // assume failed
       handleClearCanvas(true);
     }
   }, [gameState, isPredicting, sketchHasChanged, addPrediction, classify]);
 
+  useEffect(() => {
+    if (gameState === 'playing') {
+      const preventDefault = (e) => e.preventDefault();
+      document.addEventListener('touchmove', preventDefault, { passive: false });
+      return () => {
+        document.removeEventListener('touchmove', preventDefault, { passive: false });
+      }
+    }
+  }, [gameState]);
   const menuVisible = gameState === 'menu' || gameState === 'loading';
   const isPlaying = gameState === 'playing';
   const countdownVisible = gameState === 'countdown';
