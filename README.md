@@ -1,5 +1,9 @@
 
-![thumbnail](./blog/thumbnail.png)
+<p align="center">
+<img alt="doodle dash thumbnail" src="./blog/thumbnail-wide.png">
+</p>
+
+---
 
 # Doodle Dash
 
