@@ -23,10 +23,6 @@ function shuffleArray(array) {
   }
 }
 
-function lerp(a, b, t) {
-  return a * (1 - t) + b * t;
-}
-
 function App() {
 
   // Model loading
@@ -83,23 +79,23 @@ function App() {
             const filteredResult = result.data.filter(x => !constants.BANNED_LABELS.includes(x.label));
             const timespent = canvasRef.current.getTimeSpentDrawing();
 
-            const applyEasyMode = timespent - constants.EASY_MODE_DELAY;
-            if (applyEasyMode > 0 && filteredResult[0].score > constants.EASY_MODE_THRESHOLD) {
+            // Slowly start rejecting labels that are not the target
+            const applyEasyMode = timespent - constants.REJECT_TIME_DELAY;
+            if (applyEasyMode > 0 && filteredResult[0].score > constants.START_REJECT_THRESHOLD) {
 
-              const easyFactor = Math.min(1, applyEasyMode / constants.EASY_MODE_DURATION);
+              // The number of labels to reject
+              let amount = applyEasyMode / constants.REJECT_TIME_PER_LABEL;
 
-              for (let i = 0; i < filteredResult.length; ++i) {
-                // adjust scores
+              for (let i = 0; i < filteredResult.length && i < amount + 1; ++i) {
                 if (filteredResult[i].label === targets[targetIndex]) {
-                  // linearly interpolate to 1
-                  filteredResult[i].score = lerp(filteredResult[i].score, 1, easyFactor);
-
-
-                  break; // small optimization to stop when we reach target since those after will be lower
+                  // The target label should not be rejected
+                  continue;
+                }
+                if (amount > i) {
+                  filteredResult[i].score = 0;
                 } else {
-                  // linearly interpolate to 0
-                  const f = (1 - easyFactor) / (filteredResult.length - 1);
-                  filteredResult[i].score = lerp(filteredResult[i].score, 0, f);
+                  // fractional amount
+                  filteredResult[i].score *= (i - amount);
                 }
               }
 
@@ -107,10 +103,12 @@ function App() {
               filteredResult.sort((a, b) => b.score - a.score);
             }
 
-            // Apply "easy-mode" if the user is taking too long
+            // Normalize to be a probability distribution
+            const sum = filteredResult.reduce((acc, x) => acc + x.score, 0);
+            filteredResult.forEach(x => x.score /= sum);
+
             setOutput(filteredResult);
           }
-          // nextFrame();
           break;
       }
     };
