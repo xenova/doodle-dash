@@ -288,8 +288,7 @@ function App() {
   const gameOver = gameState === 'end';
   return (
     <>
-
-      <div className="h-full w-full top-0 left-0 absolute">
+      <div className={`h-full w-full top-0 left-0 absolute ${isPlaying ? '' : 'pointer-events-none'}`}>
         <SketchCanvas onSketchChange={() => {
           setSketchHasChanged(true);
         }} ref={canvasRef} />
