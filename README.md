@@ -7,5 +7,5 @@
 
 # Doodle Dash
 
+https://github.com/xenova/doodle-dash/assets/26504141/148c3528-49cf-4c6c-bad6-2aeff4bfa1f3
 
-<video src="https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/blog/ml-web-games/demo.mp4" alt="Demo video"></video>
